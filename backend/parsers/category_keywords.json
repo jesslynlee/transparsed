@@ -1,0 +1,13 @@
+{
+  "Groceries": ["COLD STORAGE", "FAIRPRICE", "SHENG SIONG", "GIANT"],
+  "Dining": ["RESTAURANT", "CAFE", "FOOD", "MCDONALD", "STARBUCKS", "GRAB FOOD", "DELIVEROO", "FOODPANDA"],
+  "Transportation": ["SMRT", "GRAB", "GOJEK", "UBER", "COMFORTDELGRO", "TRANSIT", "MRT", "BUS"],
+  "Shopping": ["AMAZON", "LAZADA", "SHOPEE", "UNIQLO", "ZARA", "H&M", "TARGET", "IKEA"],
+  "Subscriptions": ["NETFLIX", "SPOTIFY", "APPLE.COM", "GOOGLE", "DISNEY", "YOUTUBE"],
+  "Utilities": ["SP GROUP", "SINGTEL"],
+  "Healthcare": ["CLINIC", "PHARMACY", "HOSPITAL", "GUARDIAN", "WATSONS"],
+  "Travel": ["AIRLINES", "HOTEL", "BOOKING", "AGODA", "AIRBNB", "KLOOK"],
+  "Gas/Fuel": ["SHELL", "ESSO", "CALTEX", "SPC"],
+  "Insurance": ["INSURANCE", "AIA", "PRUDENTIAL", "GREAT EASTERN"],
+  "Entertainment": ["CINEMA", "GOLDEN VILLAGE", "CATHAY", "SHAW"]
+}

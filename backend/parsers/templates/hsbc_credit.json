@@ -1,0 +1,47 @@
+{
+  "template_id": "hsbc_credit",
+  "institution": "HSBC",
+  "account_name": "HSBC Visa Revolution",
+  "account_type": "credit_card",
+
+  "detection": {
+    "keywords": ["HSBC", "VISA REVOLUTION", "HSBC Bank (Singapore)"],
+    "min_matches": 1
+  },
+
+  "extraction": {
+    "start_after": "AMOUNT",
+    "date_pattern": "^\\d{2}\\s*\\w{3}$",
+    "skip_patterns": [
+      "^\\s*$",
+      "Previous Statement Balance",
+      "NAME OF SUPPLEMENTARY",
+      "ACCOUNT SUMMARY",
+      "^XXXX",
+      "XXXX-XXXX"
+    ],
+    "stop_patterns": [
+      "^Total\\s+Due"
+    ]
+  },
+
+  "columns": {
+    "post_date": { "x_min": 50, "x_max": 95 },
+    "tran_date": { "x_min": 95, "x_max": 135 },
+    "description": { "x_min": 135, "x_max": 325 },
+    "amount": { "x_min": 325, "x_max": 375 }
+  },
+
+  "date_format": "%d %b",
+  "date_year_source": "statement_period",
+
+  "statement_period": {
+    "pattern": "(\\d{2}\\s+\\w{3}\\s+\\d{4})\\s+to\\s+(\\d{2}\\s+\\w{3}\\s+\\d{4})"
+  },
+
+  "amount_parsing": {
+    "credit_suffix": "CR",
+    "remove_chars": ["$", ","],
+    "parentheses_negative": true
+  }
+}
