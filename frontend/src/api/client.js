@@ -1,0 +1,73 @@
+import axios from "axios"
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5001/api",
+})
+
+export async function getCategories() {
+  const { data } = await api.get("/categories")
+  return data
+}
+
+export async function getAccounts() {
+  const { data } = await api.get("/accounts")
+  return data
+}
+
+export async function createAccount(account) {
+  const { data } = await api.post("/accounts", account)
+  return data
+}
+
+export async function uploadStatement(file) {
+  const formData = new FormData()
+  formData.append("file", file)
+  const { data } = await api.post("/upload", formData)
+  return data
+}
+
+export async function getTransactions(params = {}) {
+  const { data } = await api.get("/transactions", { params })
+  return data
+}
+
+export async function updateTransaction(id, fields) {
+  const { data } = await api.put(`/transactions/${id}`, fields)
+  return data
+}
+
+export async function deleteTransaction(id) {
+  await api.delete(`/transactions/${id}`)
+}
+
+export async function commitTransactions(transactionIds) {
+  const { data } = await api.post("/transactions/commit", { transaction_ids: transactionIds })
+  return data
+}
+
+export async function bulkUpdateTransactions(updates) {
+  const { data } = await api.post("/transactions/bulk-update", { updates })
+  return data
+}
+
+export async function getDashboardSummary(filters = {}) {
+  const { data } = await api.get("/dashboard/summary", { params: filters })
+  return data
+}
+
+export async function getDashboardByCategory(filters = {}) {
+  const { data } = await api.get("/dashboard/by-category", { params: filters })
+  return data
+}
+
+export async function getDashboardTrends(filters = {}) {
+  const { data } = await api.get("/dashboard/trends", { params: filters })
+  return data
+}
+
+export async function getDashboardTopCategories(filters = {}) {
+  const { data } = await api.get("/dashboard/top-categories", { params: filters })
+  return data
+}
+
+export default api
