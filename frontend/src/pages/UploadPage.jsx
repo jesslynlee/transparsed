@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { Upload, CheckCircle, XCircle, Loader2, FileText, X, History } from "lucide-react"
+import { Upload, CheckCircle, XCircle, Loader2, FileText, X, History, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,13 +8,15 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { uploadStatement, getUploads } from "@/api/client"
+import { uploadStatement, getUploads, deleteUpload } from "@/api/client"
+import { AlertDialog } from "@/components/ui/alert-dialog"
 
 export default function UploadPage() {
   const [files, setFiles] = useState([])
   const [isDragging, setIsDragging] = useState(false)
   const [pastUploads, setPastUploads] = useState([])
   const [uploadsLoading, setUploadsLoading] = useState(true)
+  const [confirmDialog, setConfirmDialog] = useState(null)
   const inputRef = useRef(null)
   const navigate = useNavigate()
 
@@ -91,6 +93,25 @@ export default function UploadPage() {
 
   const clearFinished = () => {
     setFiles(prev => prev.filter(f => f.status !== "success" && f.status !== "error"))
+  }
+
+  const handleDeleteUpload = (upload) => {
+    setConfirmDialog({
+      title: "Delete upload",
+      description: `This will remove "${upload.filename}" and delete all its pending transactions. Committed transactions will not be affected.`,
+      confirmLabel: "Delete",
+      variant: "destructive",
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        try {
+          const result = await deleteUpload(upload.id)
+          toast.success(`Deleted ${result.deleted_transactions} pending transaction${result.deleted_transactions !== 1 ? "s" : ""}`)
+          fetchUploads()
+        } catch {
+          toast.error("Failed to delete upload")
+        }
+      },
+    })
   }
 
   return (
@@ -215,6 +236,7 @@ export default function UploadPage() {
                     <TableHead>Account</TableHead>
                     <TableHead>Period</TableHead>
                     <TableHead>Uploaded</TableHead>
+                    <TableHead className="w-16"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -242,6 +264,16 @@ export default function UploadPage() {
                           hour: "2-digit", minute: "2-digit",
                         })}
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleDeleteUpload(u)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -250,6 +282,16 @@ export default function UploadPage() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog
+        open={!!confirmDialog}
+        onClose={() => setConfirmDialog(null)}
+        onConfirm={confirmDialog?.onConfirm}
+        title={confirmDialog?.title}
+        description={confirmDialog?.description}
+        confirmLabel={confirmDialog?.confirmLabel}
+        variant={confirmDialog?.variant}
+      />
     </div>
   )
 }

@@ -166,6 +166,22 @@ def get_uploads():
     return [dict(row) for row in rows]
 
 
+def delete_upload(upload_id):
+    db = get_db()
+    row = db.execute(
+        "SELECT filename FROM uploaded_statements WHERE id = ?", (upload_id,)
+    ).fetchone()
+    if not row:
+        return None
+    deleted = db.execute(
+        "DELETE FROM transactions WHERE source_file = ? AND is_pending = 1",
+        (row["filename"],),
+    ).rowcount
+    db.execute("DELETE FROM uploaded_statements WHERE id = ?", (upload_id,))
+    db.commit()
+    return {"deleted_transactions": deleted}
+
+
 def compute_file_hash(file_path):
     h = hashlib.sha256()
     with open(file_path, "rb") as f:

@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 
-from models.transaction import get_uploads
+from models.transaction import get_uploads, delete_upload
 from services.parsing_service import (
     process_upload,
     DuplicateFileError,
@@ -13,6 +13,14 @@ upload_bp = Blueprint("upload", __name__)
 @upload_bp.route("/uploads", methods=["GET"])
 def list_uploads():
     return jsonify(get_uploads())
+
+
+@upload_bp.route("/uploads/<int:upload_id>", methods=["DELETE"])
+def remove_upload(upload_id):
+    result = delete_upload(upload_id)
+    if not result:
+        return jsonify({"error": "Upload not found"}), 404
+    return jsonify(result)
 
 
 @upload_bp.route("/upload", methods=["POST"])
