@@ -19,6 +19,11 @@ export async function createAccount(account) {
   return data
 }
 
+export async function getUploads() {
+  const { data } = await api.get("/uploads")
+  return data
+}
+
 export async function uploadStatement(file) {
   const formData = new FormData()
   formData.append("file", file)

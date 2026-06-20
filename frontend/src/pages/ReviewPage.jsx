@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from "react"
-import { FileEdit, Trash2, Search, Check, Save } from "lucide-react"
+import { FileEdit, Trash2, Search, Check, Save, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select } from "@/components/ui/select"
+import { AlertDialog } from "@/components/ui/alert-dialog"
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table"
@@ -20,7 +22,10 @@ export default function ReviewPage() {
   const [accounts, setAccounts] = useState([])
   const [selected, setSelected] = useState(new Set())
   const [editedRows, setEditedRows] = useState({})
+  const [originalData, setOriginalData] = useState({})
   const [loading, setLoading] = useState(true)
+  const [actionLoading, setActionLoading] = useState(null)
+  const [confirmDialog, setConfirmDialog] = useState(null)
   const [search, setSearch] = useState("")
   const [accountFilter, setAccountFilter] = useState("")
   const [monthFilter, setMonthFilter] = useState("")
@@ -47,6 +52,11 @@ export default function ReviewPage() {
       setAccounts(accts)
       setSelected(new Set())
       setEditedRows({})
+      const origMap = {}
+      for (const t of txns) {
+        origMap[t.id] = { date: t.date, description: t.description, amount: t.amount, category_id: t.category_id }
+      }
+      setOriginalData(origMap)
     } finally {
       setLoading(false)
     }
@@ -54,11 +64,27 @@ export default function ReviewPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  const updateEdited = (id, field, value) => {
+    setEditedRows(prev => {
+      const updated = { ...prev, [id]: { ...prev[id], [field]: value } }
+      const orig = originalData[id]
+      if (orig) {
+        const edits = updated[id]
+        const allMatch = Object.entries(edits).every(([k, v]) => {
+          const origVal = orig[k]
+          return origVal !== undefined && String(v) === String(origVal)
+        })
+        if (allMatch) {
+          const { [id]: _, ...rest } = updated
+          return rest
+        }
+      }
+      return updated
+    })
+  }
+
   const handleEdit = (id, field, value) => {
-    setEditedRows(prev => ({
-      ...prev,
-      [id]: { ...prev[id], [field]: value },
-    }))
+    updateEdited(id, field, value)
     setTransactions(prev => prev.map(t =>
       t.id === id ? { ...t, [field]: value } : t
     ))
@@ -66,39 +92,83 @@ export default function ReviewPage() {
 
   const handleCategoryChange = (id, categoryId) => {
     const cat = categories.find(c => c.id === Number(categoryId))
-    setEditedRows(prev => ({
-      ...prev,
-      [id]: { ...prev[id], category_id: Number(categoryId) },
-    }))
+    updateEdited(id, "category_id", Number(categoryId))
     setTransactions(prev => prev.map(t =>
       t.id === id ? { ...t, category_id: Number(categoryId), category_name: cat?.name || null } : t
     ))
   }
 
-  const handleDelete = async (id) => {
-    await deleteTransaction(id)
-    setTransactions(prev => prev.filter(t => t.id !== id))
-    setSelected(prev => { const n = new Set(prev); n.delete(id); return n })
+  const handleDelete = (id) => {
+    setConfirmDialog({
+      title: "Delete transaction",
+      description: "This transaction will be permanently removed. This cannot be undone.",
+      confirmLabel: "Delete",
+      variant: "destructive",
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        try {
+          await deleteTransaction(id)
+          setTransactions(prev => prev.filter(t => t.id !== id))
+          setSelected(prev => { const n = new Set(prev); n.delete(id); return n })
+          toast.success("Transaction deleted")
+        } catch {
+          toast.error("Failed to delete transaction")
+        }
+      },
+    })
   }
 
-  const handleCommitAll = async () => {
-    const ids = transactions.map(t => t.id)
-    await commitTransactions(ids)
-    fetchData()
+  const handleCommitAll = () => {
+    setConfirmDialog({
+      title: "Commit all transactions",
+      description: `This will commit all ${transactions.length} transactions to your database. You can still edit them later in Transaction History.`,
+      confirmLabel: "Commit All",
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        setActionLoading("commitAll")
+        try {
+          const ids = transactions.map(t => t.id)
+          await commitTransactions(ids)
+          toast.success(`${ids.length} transactions committed`)
+          fetchData()
+        } catch {
+          toast.error("Failed to commit transactions")
+        } finally {
+          setActionLoading(null)
+        }
+      },
+    })
   }
 
   const handleCommitSelected = async () => {
-    await commitTransactions([...selected])
-    fetchData()
+    setActionLoading("commitSelected")
+    try {
+      const count = selected.size
+      await commitTransactions([...selected])
+      toast.success(`${count} transaction${count !== 1 ? "s" : ""} committed`)
+      fetchData()
+    } catch {
+      toast.error("Failed to commit transactions")
+    } finally {
+      setActionLoading(null)
+    }
   }
 
   const handleSaveChanges = async () => {
-    const promises = Object.entries(editedRows).map(([id, fields]) =>
-      updateTransaction(Number(id), fields)
-    )
-    await Promise.all(promises)
-    setEditedRows({})
-    fetchData()
+    setActionLoading("save")
+    try {
+      const promises = Object.entries(editedRows).map(([id, fields]) =>
+        updateTransaction(Number(id), fields)
+      )
+      await Promise.all(promises)
+      setEditedRows({})
+      toast.success("Changes saved")
+      fetchData()
+    } catch {
+      toast.error("Failed to save changes")
+    } finally {
+      setActionLoading(null)
+    }
   }
 
   const toggleSelect = (id) => {
@@ -147,7 +217,7 @@ export default function ReviewPage() {
       </div>
 
       {mode === "history" && (
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -187,21 +257,21 @@ export default function ReviewPage() {
             {mode === "pending" && transactions.length > 0 && (
               <>
                 {selected.size > 0 && (
-                  <Button size="sm" variant="outline" onClick={handleCommitSelected}>
-                    <Check className="h-4 w-4 mr-1" />
+                  <Button size="sm" variant="outline" onClick={handleCommitSelected} disabled={!!actionLoading}>
+                    {actionLoading === "commitSelected" ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Check className="h-4 w-4 mr-1" />}
                     Commit Selected ({selected.size})
                   </Button>
                 )}
-                <Button size="sm" onClick={handleCommitAll}>
-                  <Check className="h-4 w-4 mr-1" />
+                <Button size="sm" onClick={handleCommitAll} disabled={!!actionLoading}>
+                  {actionLoading === "commitAll" ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Check className="h-4 w-4 mr-1" />}
                   Commit All
                 </Button>
               </>
             )}
             {mode === "history" && hasEdits && (
-              <Button size="sm" onClick={handleSaveChanges}>
-                <Save className="h-4 w-4 mr-1" />
-                Save Changes
+              <Button size="sm" onClick={handleSaveChanges} disabled={!!actionLoading}>
+                {actionLoading === "save" ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+                Save Changes ({Object.keys(editedRows).length})
               </Button>
             )}
           </div>
@@ -219,6 +289,7 @@ export default function ReviewPage() {
               </p>
             </div>
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -304,9 +375,20 @@ export default function ReviewPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog
+        open={!!confirmDialog}
+        onClose={() => setConfirmDialog(null)}
+        onConfirm={confirmDialog?.onConfirm}
+        title={confirmDialog?.title}
+        description={confirmDialog?.description}
+        confirmLabel={confirmDialog?.confirmLabel}
+        variant={confirmDialog?.variant}
+      />
     </div>
   )
 }

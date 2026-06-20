@@ -154,6 +154,18 @@ def check_duplicate_file(file_hash):
     return row is not None
 
 
+def get_uploads():
+    db = get_db()
+    rows = db.execute(
+        """SELECT s.id, s.filename, s.statement_period, s.uploaded_at,
+                  a.name as account_name
+           FROM uploaded_statements s
+           LEFT JOIN accounts a ON s.account_id = a.id
+           ORDER BY s.uploaded_at DESC""",
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
 def compute_file_hash(file_path):
     h = hashlib.sha256()
     with open(file_path, "rb") as f:

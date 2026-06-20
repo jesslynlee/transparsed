@@ -109,7 +109,7 @@ export default function DashboardPage() {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
         <p className="text-muted-foreground">
-          Your spending overview across all accounts.
+          Track that spend.
         </p>
       </div>
 
@@ -153,10 +153,27 @@ export default function DashboardPage() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-muted-foreground text-center py-12">Loading...</p>
+        <div className="space-y-6">
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i}>
+                <CardHeader className="pb-2"><div className="h-4 w-24 rounded bg-muted animate-pulse" /></CardHeader>
+                <CardContent><div className="h-8 w-20 rounded bg-muted animate-pulse" /></CardContent>
+              </Card>
+            ))}
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {[...Array(2)].map((_, i) => (
+              <Card key={i}>
+                <CardHeader><div className="h-5 w-40 rounded bg-muted animate-pulse" /></CardHeader>
+                <CardContent><div className="h-[300px] rounded bg-muted animate-pulse" /></CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className={`grid gap-4 grid-cols-2 ${monthFilter ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Spending</CardTitle>
@@ -192,35 +209,37 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">vs Last Month</CardTitle>
-                {summary?.month_over_month ? (
-                  summary.month_over_month.change_pct > 0
-                    ? <ArrowUpRight className="h-4 w-4 text-red-500" />
-                    : <ArrowDownRight className="h-4 w-4 text-green-500" />
-                ) : (
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                )}
-              </CardHeader>
-              <CardContent>
-                {summary?.month_over_month ? (
-                  <>
-                    <div className={`text-2xl font-bold ${summary.month_over_month.change_pct > 0 ? "text-red-500" : "text-green-500"}`}>
-                      {summary.month_over_month.change_pct > 0 ? "+" : ""}{summary.month_over_month.change_pct}%
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {fmtMonth(summary.month_over_month.prev_month)}: {fmt(summary.month_over_month.previous)}
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold">—</div>
-                    <p className="text-xs text-muted-foreground">Select a month to compare</p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+            {monthFilter && (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">vs Last Month</CardTitle>
+                  {summary?.month_over_month ? (
+                    summary.month_over_month.change_pct > 0
+                      ? <ArrowUpRight className="h-4 w-4 text-red-500" />
+                      : <ArrowDownRight className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </CardHeader>
+                <CardContent>
+                  {summary?.month_over_month ? (
+                    <>
+                      <div className={`text-2xl font-bold ${summary.month_over_month.change_pct > 0 ? "text-red-500" : "text-green-500"}`}>
+                        {summary.month_over_month.change_pct > 0 ? "+" : ""}{summary.month_over_month.change_pct}%
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {fmtMonth(summary.month_over_month.prev_month)}: {fmt(summary.month_over_month.previous)}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold">—</div>
+                      <p className="text-xs text-muted-foreground">No data for previous month</p>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           <div className={monthFilter ? "" : "grid gap-4 md:grid-cols-2"}>

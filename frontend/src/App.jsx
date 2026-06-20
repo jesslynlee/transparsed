@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from "react-router-dom"
 import { Upload, FileEdit, LayoutDashboard } from "lucide-react"
+import { Toaster } from "sonner"
 import UploadPage from "@/pages/UploadPage"
 import ReviewPage from "@/pages/ReviewPage"
 import DashboardPage from "@/pages/DashboardPage"
@@ -31,14 +32,14 @@ export default function App() {
                   }
                 >
                   <Icon className="h-4 w-4" />
-                  {label}
+                  <span className="hidden sm:inline">{label}</span>
                 </NavLink>
               ))}
             </nav>
           </div>
         </header>
 
-        <main className="max-w-6xl mx-auto px-6 py-8">
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           <Routes>
             <Route path="/" element={<Navigate to="/upload" replace />} />
             <Route path="/upload" element={<UploadPage />} />
@@ -47,6 +48,7 @@ export default function App() {
           </Routes>
         </main>
       </div>
+        <Toaster position="bottom-right" richColors closeButton />
     </BrowserRouter>
   )
 }

@@ -1,17 +1,35 @@
-import { useState, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { Upload, CheckCircle, XCircle, Loader2, FileText } from "lucide-react"
+import { Upload, CheckCircle, XCircle, Loader2, FileText, X, History } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { uploadStatement } from "@/api/client"
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { uploadStatement, getUploads } from "@/api/client"
 
 export default function UploadPage() {
   const [files, setFiles] = useState([])
   const [isDragging, setIsDragging] = useState(false)
+  const [pastUploads, setPastUploads] = useState([])
+  const [uploadsLoading, setUploadsLoading] = useState(true)
   const inputRef = useRef(null)
   const navigate = useNavigate()
 
   const nextId = useRef(0)
+
+  const fetchUploads = useCallback(async () => {
+    try {
+      const data = await getUploads()
+      setPastUploads(data)
+    } finally {
+      setUploadsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { fetchUploads() }, [fetchUploads])
 
   const handleFiles = useCallback(async (newFiles) => {
     const pdfFiles = Array.from(newFiles).filter(f => f.name.toLowerCase().endsWith(".pdf"))
@@ -40,14 +58,17 @@ export default function UploadPage() {
             ? { ...f, status: "success", message: result.message, transactionCount: result.transaction_count }
             : f
         ))
+        toast.success(`${result.transaction_count} transactions parsed from ${entry.name}`)
+        fetchUploads()
       } catch (err) {
         const message = err.response?.data?.error || "Upload failed"
         setFiles(prev => prev.map(f =>
           f.id === entry.id ? { ...f, status: "error", message } : f
         ))
+        toast.error(`${entry.name}: ${message}`)
       }
     }
-  }, [])
+  }, [fetchUploads])
 
   const onDrop = useCallback((e) => {
     e.preventDefault()
@@ -66,6 +87,11 @@ export default function UploadPage() {
   }, [])
 
   const hasSuccess = files.some(f => f.status === "success")
+  const hasFinished = files.some(f => f.status === "success" || f.status === "error")
+
+  const clearFinished = () => {
+    setFiles(prev => prev.filter(f => f.status !== "success" && f.status !== "error"))
+  }
 
   return (
     <div className="space-y-6">
@@ -109,8 +135,14 @@ export default function UploadPage() {
 
       {files.length > 0 && (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle>Uploaded Files</CardTitle>
+            {hasFinished && (
+              <Button variant="ghost" size="sm" onClick={clearFinished}>
+                <X className="h-4 w-4 mr-1" />
+                Clear
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="space-y-3">
             {files.map((f, i) => (
@@ -155,6 +187,69 @@ export default function UploadPage() {
           </Button>
         </div>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <History className="h-5 w-5" />
+            Past Uploads
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {uploadsLoading ? (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-8 rounded bg-muted animate-pulse" />
+              ))}
+            </div>
+          ) : pastUploads.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              No statements uploaded yet.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Filename</TableHead>
+                    <TableHead>Account</TableHead>
+                    <TableHead>Period</TableHead>
+                    <TableHead>Uploaded</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pastUploads.map(u => (
+                    <TableRow key={u.id}>
+                      <TableCell className="font-medium">
+                        <span className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                          {u.filename}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="text-xs font-normal">
+                          {u.account_name || "—"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {u.statement_period
+                          ? new Date(u.statement_period + "-01").toLocaleDateString("en-US", { month: "short", year: "numeric" })
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {new Date(u.uploaded_at + "Z").toLocaleDateString("en-US", {
+                          month: "short", day: "numeric", year: "numeric",
+                          hour: "2-digit", minute: "2-digit",
+                        })}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
