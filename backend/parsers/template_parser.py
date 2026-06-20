@@ -50,9 +50,12 @@ class TemplateParser(BaseParser):
                 words = page.extract_words(
                     keep_blank_chars=True, x_tolerance=3, y_tolerance=3
                 )
-                page_txns, page_warnings = self._extract_transactions(words, statement_period)
+                page_txns, page_warnings, hit_stop = self._extract_transactions(words, statement_period)
                 transactions.extend(page_txns)
                 warnings.extend(page_warnings)
+
+                if hit_stop:
+                    break
 
         return ParseResult(
             transactions=transactions,
@@ -80,6 +83,7 @@ class TemplateParser(BaseParser):
     def _extract_transactions(self, words, statement_period):
         transactions = []
         warnings = []
+        hit_stop = False
 
         col = self.config["columns"]
         post_date_range = (col["post_date"]["x_min"], col["post_date"]["x_max"])
@@ -105,6 +109,7 @@ class TemplateParser(BaseParser):
                 continue
 
             if any(p.search(full_text) for p in stop_patterns):
+                hit_stop = True
                 break
 
             if any(p.search(full_text) for p in skip_patterns):
@@ -146,7 +151,7 @@ class TemplateParser(BaseParser):
                 )
             )
 
-        return transactions, warnings
+        return transactions, warnings, hit_stop
 
     def _group_into_lines(self, words, y_tolerance=4):
         lines = {}
