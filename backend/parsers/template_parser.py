@@ -30,7 +30,7 @@ class TemplateParser(BaseParser):
             with pdfplumber.open(pdf_path) as pdf:
                 text = pdf.pages[0].extract_text() or ""
                 text_upper = text.upper()
-                matches = sum(1 for kw in keywords if kw.upper() in text_upper)
+                matches = sum(1 for kw in keywords if re.search(kw, text_upper, re.IGNORECASE))
                 return matches >= min_matches
         except Exception:
             return False
@@ -67,15 +67,18 @@ class TemplateParser(BaseParser):
     def _extract_statement_period(self, text: str):
         import datetime
 
-        pattern = self.config.get("statement_period", {}).get("pattern")
+        sp_config = self.config.get("statement_period", {})
+        pattern = sp_config.get("pattern")
         if not pattern:
             return None
         match = re.search(pattern, text, re.IGNORECASE)
         if not match:
             return None
+        group_idx = sp_config.get("date_group", 2)
+        date_fmt = sp_config.get("date_format", "%d %b %Y")
         try:
-            end_date_str = match.group(2)
-            end_date = datetime.datetime.strptime(end_date_str, "%d %b %Y")
+            date_str = match.group(group_idx)
+            end_date = datetime.datetime.strptime(date_str, date_fmt)
             return f"{end_date.year}-{end_date.month:02d}"
         except (IndexError, ValueError):
             return match.group(1)
@@ -86,8 +89,15 @@ class TemplateParser(BaseParser):
         hit_stop = False
 
         col = self.config["columns"]
-        post_date_range = (col["post_date"]["x_min"], col["post_date"]["x_max"])
-        tran_date_range = (col["tran_date"]["x_min"], col["tran_date"]["x_max"])
+        has_post_date = "post_date" in col
+        has_tran_date = "tran_date" in col
+        has_date = "date" in col
+        if has_post_date:
+            post_date_range = (col["post_date"]["x_min"], col["post_date"]["x_max"])
+        if has_tran_date:
+            tran_date_range = (col["tran_date"]["x_min"], col["tran_date"]["x_max"])
+        if has_date:
+            date_range = (col["date"]["x_min"], col["date"]["x_max"])
         desc_range = (col["description"]["x_min"], col["description"]["x_max"])
         amount_range = (col["amount"]["x_min"], col["amount"]["x_max"])
 
@@ -104,7 +114,7 @@ class TemplateParser(BaseParser):
             full_text = " ".join(w["text"] for w in sorted(line_words, key=lambda w: w["x0"]))
 
             if not in_transaction_area:
-                if start_after.upper() in full_text.upper():
+                if re.search(start_after, full_text, re.IGNORECASE):
                     in_transaction_area = True
                 continue
 
@@ -115,13 +125,20 @@ class TemplateParser(BaseParser):
             if any(p.search(full_text) for p in skip_patterns):
                 continue
 
-            post_date_words = self._words_in_range(line_words, *post_date_range)
-            tran_date_words = self._words_in_range(line_words, *tran_date_range)
+            if has_date:
+                date_words = self._words_in_range(line_words, *date_range)
+                date_text = " ".join(w["text"] for w in date_words).strip()
+                post_date_text = ""
+                tran_date_text = date_text
+            else:
+                post_date_words = self._words_in_range(line_words, *post_date_range) if has_post_date else []
+                tran_date_words = self._words_in_range(line_words, *tran_date_range) if has_tran_date else []
+                post_date_text = " ".join(w["text"] for w in post_date_words).strip()
+                tran_date_text = " ".join(w["text"] for w in tran_date_words).strip()
+
             desc_words = self._words_in_range(line_words, *desc_range)
             amount_words = self._words_in_range(line_words, *amount_range)
 
-            post_date_text = " ".join(w["text"] for w in post_date_words).strip()
-            tran_date_text = " ".join(w["text"] for w in tran_date_words).strip()
             desc_text = " ".join(w["text"] for w in desc_words).strip()
             amount_text = " ".join(w["text"] for w in amount_words).strip()
 
@@ -209,9 +226,10 @@ class TemplateParser(BaseParser):
             return date_text
 
     def _guess_category(self, description):
-        desc_upper = description.upper()
+        desc_compact = re.sub(r'\s+', '', description).upper()
         for category, keywords in self.category_keywords.items():
             for kw in keywords:
-                if kw.upper() in desc_upper:
+                kw_compact = re.sub(r'[\s*+?]', '', kw).upper()
+                if kw_compact in desc_compact:
                     return category
         return None

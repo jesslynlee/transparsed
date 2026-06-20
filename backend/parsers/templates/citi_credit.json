@@ -1,0 +1,51 @@
+{
+  "template_id": "citi_credit",
+  "institution": "Citibank",
+  "account_name": "Citi Rewards",
+  "account_type": "credit_card",
+
+  "detection": {
+    "keywords": ["Citibank", "CITI\\s*REWARDS"],
+    "min_matches": 2
+  },
+
+  "extraction": {
+    "start_after": "AMOUNT\\s*\\(SGD\\)",
+    "date_pattern": "^\\d{2}[A-Z]{3}$",
+    "skip_patterns": [
+      "^\\s*$",
+      "TRANSACTIONS\\s*FOR",
+      "ALL\\s*TRANSACTIONS",
+      "BALANCE\\s*PREVIOUS",
+      "FAST\\s*INCOMING",
+      "^SUB-TOTAL",
+      "CITI\\s*REWARDS\\s*WORLD\\s*MASTERCARD",
+      "^Page\\d",
+      "Payment\\s*Due\\s*Date",
+      "Citibank\\s*Singapore"
+    ],
+    "stop_patterns": [
+      "^GRAND\\s*TOTAL"
+    ]
+  },
+
+  "columns": {
+    "date": { "x_min": 42, "x_max": 80 },
+    "description": { "x_min": 100, "x_max": 500 },
+    "amount": { "x_min": 500, "x_max": 567 }
+  },
+
+  "date_format": "%d %b",
+  "date_year_source": "statement_period",
+
+  "statement_period": {
+    "pattern": "Statement\\s*Date\\s+([A-Za-z]+\\d{2},?\\d{4})",
+    "date_group": 1,
+    "date_format": "%B%d,%Y"
+  },
+
+  "amount_parsing": {
+    "remove_chars": ["$", ","],
+    "parentheses_negative": true
+  }
+}
