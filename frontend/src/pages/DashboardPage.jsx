@@ -26,7 +26,8 @@ export default function DashboardPage() {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
 
-  const [monthFilter, setMonthFilter] = useState(null)
+  const [startMonth, setStartMonth] = useState(null)
+  const [endMonth, setEndMonth] = useState(null)
   const [monthsLoaded, setMonthsLoaded] = useState(false)
   const [accountFilter, setAccountFilter] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("")
@@ -36,27 +37,35 @@ export default function DashboardPage() {
     if (monthsLoaded) return
     getDashboardTrends({}).then(tr => {
       if (tr.length > 0) {
-        setMonthFilter(tr[tr.length - 1].month)
+        const latest = tr[tr.length - 1].month
+        setStartMonth(latest)
+        setEndMonth(latest)
       } else {
-        setMonthFilter("")
+        setStartMonth("")
+        setEndMonth("")
       }
       setMonthsLoaded(true)
     })
   }, [monthsLoaded])
+
+  const isSingleMonth = startMonth && endMonth && startMonth === endMonth
+  const hasDateFilter = startMonth || endMonth
 
   const buildFilters = useCallback(() => {
     const filters = {}
     if (accountFilter) filters.account_id = accountFilter
     if (categoryFilter) filters.category_id = categoryFilter
     if (merchantSearch) filters.search = merchantSearch
-    if (monthFilter) {
-      filters.start_date = `${monthFilter}-01`
-      const [y, m] = monthFilter.split("-").map(Number)
+    if (startMonth) {
+      filters.start_date = `${startMonth}-01`
+    }
+    if (endMonth) {
+      const [y, m] = endMonth.split("-").map(Number)
       const lastDay = new Date(y, m, 0).getDate()
-      filters.end_date = `${monthFilter}-${String(lastDay).padStart(2, "0")}`
+      filters.end_date = `${endMonth}-${String(lastDay).padStart(2, "0")}`
     }
     return filters
-  }, [monthFilter, accountFilter, categoryFilter, merchantSearch])
+  }, [startMonth, endMonth, accountFilter, categoryFilter, merchantSearch])
 
   const fetchData = useCallback(async () => {
     if (!monthsLoaded) return
@@ -66,7 +75,7 @@ export default function DashboardPage() {
       const [s, bc, tr, tc, tm, accts, cats] = await Promise.all([
         getDashboardSummary(filters),
         getDashboardByCategory(filters),
-        getDashboardTrends({}),
+        getDashboardTrends(filters),
         getDashboardTopCategories(filters),
         getDashboardTopMerchants(filters),
         getAccounts(),
@@ -113,14 +122,22 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="flex gap-3 flex-wrap">
-        <Input
-          type="month"
-          value={monthFilter || ""}
-          onChange={e => setMonthFilter(e.target.value)}
-          className="w-40"
-          placeholder="All time"
-        />
+      <div className="flex gap-3 flex-wrap items-center">
+        <div className="flex items-center gap-1.5">
+          <Input
+            type="month"
+            value={startMonth || ""}
+            onChange={e => setStartMonth(e.target.value)}
+            className="w-40"
+          />
+          <span className="text-sm text-muted-foreground">to</span>
+          <Input
+            type="month"
+            value={endMonth || ""}
+            onChange={e => setEndMonth(e.target.value)}
+            className="w-40"
+          />
+        </div>
         <Select
           value={accountFilter}
           onChange={e => setAccountFilter(e.target.value)}
@@ -173,7 +190,7 @@ export default function DashboardPage() {
         </div>
       ) : (
         <>
-          <div className={`grid gap-4 grid-cols-2 ${monthFilter ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
+          <div className={`grid gap-4 grid-cols-2 ${isSingleMonth ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Spending</CardTitle>
@@ -209,7 +226,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            {monthFilter && (
+            {isSingleMonth && (
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">vs Last Month</CardTitle>
@@ -242,7 +259,7 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <div className={monthFilter ? "" : "grid gap-4 md:grid-cols-2"}>
+          <div className={isSingleMonth ? "" : "grid gap-4 md:grid-cols-2"}>
             <Card>
               <CardHeader>
                 <CardTitle>Spending by Category</CardTitle>
@@ -274,7 +291,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            {!monthFilter && (
+            {!isSingleMonth && (
               <Card>
                 <CardHeader>
                   <CardTitle>Monthly Trends</CardTitle>
