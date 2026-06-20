@@ -55,6 +55,21 @@ export async function bulkUpdateTransactions(updates) {
   return data
 }
 
+export async function deleteUpload(uploadId) {
+  const { data } = await api.delete(`/uploads/${uploadId}`)
+  return data
+}
+
+export async function getCategoryKeywords() {
+  const { data } = await api.get("/category-keywords")
+  return data
+}
+
+export async function addCategoryKeyword(category, keyword) {
+  const { data } = await api.post("/category-keywords", { category, keyword })
+  return data
+}
+
 export async function getDashboardSummary(filters = {}) {
   const { data } = await api.get("/dashboard/summary", { params: filters })
   return data

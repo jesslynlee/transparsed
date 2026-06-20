@@ -7,12 +7,13 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select } from "@/components/ui/select"
 import { AlertDialog } from "@/components/ui/alert-dialog"
+import { KeywordDialog } from "@/components/ui/keyword-dialog"
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table"
 import {
   getTransactions, updateTransaction, deleteTransaction,
-  commitTransactions, getCategories, getAccounts,
+  commitTransactions, getCategories, getAccounts, addCategoryKeyword,
 } from "@/api/client"
 
 export default function ReviewPage() {
@@ -26,6 +27,7 @@ export default function ReviewPage() {
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(null)
   const [confirmDialog, setConfirmDialog] = useState(null)
+  const [keywordDialog, setKeywordDialog] = useState(null)
   const [search, setSearch] = useState("")
   const [accountFilter, setAccountFilter] = useState("")
   const [monthFilter, setMonthFilter] = useState("")
@@ -92,10 +94,53 @@ export default function ReviewPage() {
 
   const handleCategoryChange = (id, categoryId) => {
     const cat = categories.find(c => c.id === Number(categoryId))
+    const catName = cat?.name || null
     updateEdited(id, "category_id", Number(categoryId))
     setTransactions(prev => prev.map(t =>
-      t.id === id ? { ...t, category_id: Number(categoryId), category_name: cat?.name || null } : t
+      t.id === id ? { ...t, category_id: Number(categoryId), category_name: catName } : t
     ))
+
+    const orig = originalData[id]
+    const txn = transactions.find(t => t.id === id)
+    if (catName && Number(categoryId) !== orig?.category_id && txn) {
+      setKeywordDialog({ description: txn.description, categoryName: catName })
+    }
+  }
+
+  const handleAddKeyword = async (keyword) => {
+    if (!keywordDialog) return
+    try {
+      await addCategoryKeyword(keywordDialog.categoryName, keyword)
+      const cat = categories.find(c => c.name === keywordDialog.categoryName)
+      if (cat) {
+        const kw = keyword.replace(/\s+/g, "").toUpperCase()
+        const matchedIds = []
+        setTransactions(prev => prev.map(t => {
+          if (t.category_id) return t
+          const desc = t.description.replace(/\s+/g, "").toUpperCase()
+          if (!desc.includes(kw)) return t
+          matchedIds.push(t.id)
+          return { ...t, category_id: cat.id, category_name: cat.name }
+        }))
+        if (matchedIds.length > 0) {
+          setEditedRows(prev => {
+            const updated = { ...prev }
+            for (const id of matchedIds) {
+              updated[id] = { ...updated[id], category_id: cat.id }
+            }
+            return updated
+          })
+          toast.success(`Added "${keyword}" to ${keywordDialog.categoryName} — applied to ${matchedIds.length} more transaction${matchedIds.length !== 1 ? "s" : ""}`)
+        } else {
+          toast.success(`Added "${keyword}" to ${keywordDialog.categoryName}`)
+        }
+      } else {
+        toast.success(`Added "${keyword}" to ${keywordDialog.categoryName}`)
+      }
+    } catch {
+      toast.error("Failed to add keyword")
+    }
+    setKeywordDialog(null)
   }
 
   const handleDelete = (id) => {
@@ -388,6 +433,14 @@ export default function ReviewPage() {
         description={confirmDialog?.description}
         confirmLabel={confirmDialog?.confirmLabel}
         variant={confirmDialog?.variant}
+      />
+
+      <KeywordDialog
+        open={!!keywordDialog}
+        onClose={() => setKeywordDialog(null)}
+        description={keywordDialog?.description || ""}
+        categoryName={keywordDialog?.categoryName || ""}
+        onAdd={handleAddKeyword}
       />
     </div>
   )
