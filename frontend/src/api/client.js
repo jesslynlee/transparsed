@@ -31,6 +31,11 @@ export async function uploadStatement(file) {
   return data
 }
 
+export async function createTransaction(txn) {
+  const { data } = await api.post("/transactions", txn)
+  return data
+}
+
 export async function getTransactions(params = {}) {
   const { data } = await api.get("/transactions", { params })
   return data

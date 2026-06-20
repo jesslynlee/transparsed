@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
-import { FileEdit, Trash2, Search, Check, Save, Loader2 } from "lucide-react"
+import { FileEdit, Trash2, Search, Check, Save, Loader2, Plus } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,11 +8,12 @@ import { Badge } from "@/components/ui/badge"
 import { Select } from "@/components/ui/select"
 import { AlertDialog } from "@/components/ui/alert-dialog"
 import { KeywordDialog } from "@/components/ui/keyword-dialog"
+import { AddTransactionDialog } from "@/components/ui/add-transaction-dialog"
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table"
 import {
-  getTransactions, updateTransaction, deleteTransaction,
+  getTransactions, createTransaction, updateTransaction, deleteTransaction,
   commitTransactions, getCategories, getAccounts, addCategoryKeyword,
 } from "@/api/client"
 
@@ -28,6 +29,7 @@ export default function ReviewPage() {
   const [actionLoading, setActionLoading] = useState(null)
   const [confirmDialog, setConfirmDialog] = useState(null)
   const [keywordDialog, setKeywordDialog] = useState(null)
+  const [showAddDialog, setShowAddDialog] = useState(false)
   const [search, setSearch] = useState("")
   const [accountFilter, setAccountFilter] = useState("")
   const [monthFilter, setMonthFilter] = useState("")
@@ -216,6 +218,21 @@ export default function ReviewPage() {
     }
   }
 
+  const handleAddTransaction = async (data) => {
+    try {
+      await createTransaction(data)
+      toast.success("Transaction added")
+      setShowAddDialog(false)
+      if (mode === "history") {
+        fetchData()
+      } else {
+        setMode("history")
+      }
+    } catch {
+      toast.error("Failed to add transaction")
+    }
+  }
+
   const toggleSelect = (id) => {
     setSelected(prev => {
       const next = new Set(prev)
@@ -259,6 +276,12 @@ export default function ReviewPage() {
         >
           Transaction History
         </Button>
+        <div className="ml-auto">
+          <Button size="sm" variant="outline" onClick={() => setShowAddDialog(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            Add
+          </Button>
+        </div>
       </div>
 
       {mode === "history" && (
@@ -441,6 +464,14 @@ export default function ReviewPage() {
         description={keywordDialog?.description || ""}
         categoryName={keywordDialog?.categoryName || ""}
         onAdd={handleAddKeyword}
+      />
+
+      <AddTransactionDialog
+        open={showAddDialog}
+        onClose={() => setShowAddDialog(false)}
+        onAdd={handleAddTransaction}
+        categories={categories}
+        accounts={accounts}
       />
     </div>
   )
