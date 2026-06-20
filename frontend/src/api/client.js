@@ -70,4 +70,9 @@ export async function getDashboardTopCategories(filters = {}) {
   return data
 }
 
+export async function getDashboardTopMerchants(filters = {}) {
+  const { data } = await api.get("/dashboard/top-merchants", { params: filters })
+  return data
+}
+
 export default api

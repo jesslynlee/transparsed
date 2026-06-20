@@ -14,6 +14,7 @@ from database.connection import close_db, init_db
 from models.category import seed_categories
 from routes.accounts import accounts_bp
 from routes.categories import categories_bp
+from routes.dashboard import dashboard_bp
 from routes.transactions import transactions_bp
 from routes.upload import upload_bp
 
@@ -33,6 +34,7 @@ def create_app():
 
     app.register_blueprint(accounts_bp, url_prefix="/api")
     app.register_blueprint(categories_bp, url_prefix="/api")
+    app.register_blueprint(dashboard_bp, url_prefix="/api")
     app.register_blueprint(transactions_bp, url_prefix="/api")
     app.register_blueprint(upload_bp, url_prefix="/api")
 
