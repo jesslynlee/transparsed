@@ -1,8 +1,8 @@
 {
   "Groceries": ["COLD STORAGE", "FAIRPRICE", "SHENG SIONG", "GIANT"],
-  "Dining": ["RESTAURANT", "CAFE", "FOOD", "MCDONALD", "STARBUCKS", "GRAB FOOD", "DELIVEROO", "FOODPANDA"],
+  "Dining": ["RESTAURANT", "CAFE", "FOOD", "MCDONALD", "STARBUCKS", "GRAB FOOD", "DELIVEROO", "FOODPANDA", "SUBWAY", "MAKI-SAN", "HAWKER", "BAKERY", "WOKHEY", "NIKU IKU"],
   "Transportation": ["SMRT", "GRAB", "GOJEK", "UBER", "COMFORTDELGRO", "TRANSIT", "MRT", "BUS"],
-  "Shopping": ["AMAZON", "LAZADA", "SHOPEE", "UNIQLO", "ZARA", "H&M", "TARGET", "IKEA"],
+  "Shopping": ["AMAZON", "LAZADA", "SHOPEE", "UNIQLO", "ZARA", "H&M", "TARGET", "IKEA", "TAOBAO", "LOVE BONITO"],
   "Subscriptions": ["NETFLIX", "SPOTIFY", "APPLE.COM", "GOOGLE", "DISNEY", "YOUTUBE"],
   "Utilities": ["SP GROUP", "SINGTEL"],
   "Healthcare": ["CLINIC", "PHARMACY", "HOSPITAL", "GUARDIAN", "WATSONS"],
