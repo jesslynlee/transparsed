@@ -1,7 +1,10 @@
+import logging
 import sys
 import os
 
 sys.path.insert(0, os.path.dirname(__file__))
+
+logging.getLogger("pdfminer").setLevel(logging.ERROR)
 
 from flask import Flask
 from flask_cors import CORS
@@ -11,6 +14,7 @@ from database.connection import close_db, init_db
 from models.category import seed_categories
 from routes.accounts import accounts_bp
 from routes.categories import categories_bp
+from routes.upload import upload_bp
 
 
 def create_app():
@@ -28,6 +32,7 @@ def create_app():
 
     app.register_blueprint(accounts_bp, url_prefix="/api")
     app.register_blueprint(categories_bp, url_prefix="/api")
+    app.register_blueprint(upload_bp, url_prefix="/api")
 
     @app.route("/api/health")
     def health():
@@ -36,17 +41,7 @@ def create_app():
     return app
 
 
-def find_available_port(start=5001, end=5099):
-    import socket
-    for port in range(start, end):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            if s.connect_ex(("127.0.0.1", port)) != 0:
-                return port
-    raise RuntimeError(f"No available port found in range {start}-{end}")
-
-
 if __name__ == "__main__":
     app = create_app()
-    port = find_available_port()
-    print(f"\n  Expense Tracker API running on http://localhost:{port}\n")
-    app.run(debug=True, port=port)
+    print("\n  Expense Tracker API running on http://localhost:5001\n")
+    app.run(debug=True, port=5001)
