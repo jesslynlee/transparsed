@@ -13,7 +13,7 @@ def list_transactions():
     if request.args.get("account_id"):
         filters["account_id"] = int(request.args["account_id"])
     if request.args.get("category_id"):
-        filters["category_id"] = int(request.args["category_id"])
+        filters["category_id"] = request.args["category_id"] if request.args["category_id"] == "none" else int(request.args["category_id"])
     if request.args.get("start_date"):
         filters["start_date"] = request.args["start_date"]
     if request.args.get("end_date"):

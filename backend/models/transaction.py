@@ -45,7 +45,9 @@ def get_all(is_pending=None, account_id=None, category_id=None,
     if account_id:
         query += " AND t.account_id = ?"
         params.append(account_id)
-    if category_id:
+    if category_id == "none":
+        query += " AND t.category_id IS NULL"
+    elif category_id:
         query += " AND t.category_id = ?"
         params.append(category_id)
     if start_date:
@@ -124,14 +126,22 @@ def commit(transaction_ids):
     if not transaction_ids:
         return 0
     db = get_db()
-    placeholders = ",".join("?" for _ in transaction_ids)
-    cursor = db.execute(
-        f"UPDATE transactions SET is_pending = 0, updated_at = datetime('now') "
-        f"WHERE id IN ({placeholders}) AND is_pending = 1",
-        transaction_ids,
-    )
+    committed = 0
+    skipped = 0
+    for tid in transaction_ids:
+        try:
+            cursor = db.execute(
+                "UPDATE transactions SET is_pending = 0, updated_at = datetime('now') "
+                "WHERE id = ? AND is_pending = 1",
+                (tid,),
+            )
+            if cursor.rowcount > 0:
+                committed += 1
+        except Exception:
+            db.execute("DELETE FROM transactions WHERE id = ? AND is_pending = 1", (tid,))
+            skipped += 1
     db.commit()
-    return cursor.rowcount
+    return committed
 
 
 def record_upload(filename, account_id, statement_period, file_hash):

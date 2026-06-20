@@ -15,6 +15,7 @@ import {
   getDashboardTopCategories, getDashboardTopMerchants,
   getAccounts, getCategories,
 } from "@/api/client"
+import { TransactionPanel } from "@/components/ui/transaction-panel"
 
 export default function DashboardPage() {
   const [summary, setSummary] = useState(null)
@@ -25,6 +26,8 @@ export default function DashboardPage() {
   const [accounts, setAccounts] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
+
+  const [drilldown, setDrilldown] = useState(null)
 
   const [startMonth, setStartMonth] = useState(null)
   const [endMonth, setEndMonth] = useState(null)
@@ -111,6 +114,43 @@ export default function DashboardPage() {
         <p className="text-sm text-muted-foreground">{fmt(payload[0].value)}</p>
       </div>
     )
+  }
+
+  const openDrilldown = (title, extraFilters, color) => {
+    const base = {}
+    if (startMonth) base.start_date = `${startMonth}-01`
+    if (endMonth) {
+      const [y, m] = endMonth.split("-").map(Number)
+      const lastDay = new Date(y, m, 0).getDate()
+      base.end_date = `${endMonth}-${String(lastDay).padStart(2, "0")}`
+    }
+    if (accountFilter) base.account_id = accountFilter
+    setDrilldown({ title, filters: { ...base, ...extraFilters }, color })
+  }
+
+  const handleBarClick = (data) => {
+    if (!data?.category) return
+    const cat = categories.find(c => c.name === data.category)
+    openDrilldown(data.category, { category_id: cat ? cat.id : "none" }, data.color)
+  }
+
+  const handleDotClick = (data) => {
+    if (!data?.month) return
+    const [y, m] = data.month.split("-").map(Number)
+    const lastDay = new Date(y, m, 0).getDate()
+    openDrilldown(fmtMonth(data.month), {
+      start_date: `${data.month}-01`,
+      end_date: `${data.month}-${String(lastDay).padStart(2, "0")}`,
+    })
+  }
+
+  const handleCategoryRowClick = (cat) => {
+    const found = categories.find(c => c.name === cat.category)
+    openDrilldown(cat.category, { category_id: found ? found.id : "none" }, cat.color)
+  }
+
+  const handleMerchantRowClick = (merchant) => {
+    openDrilldown(merchant.merchant, { search: merchant.merchant })
   }
 
   return (
@@ -280,7 +320,7 @@ export default function DashboardPage() {
                       />
                       <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `$${v}`} />
                       <Tooltip content={<CustomTooltip />} />
-                      <Bar dataKey="total" radius={[4, 4, 0, 0]}>
+                      <Bar dataKey="total" radius={[4, 4, 0, 0]} className="cursor-pointer" onClick={(data) => handleBarClick(data)}>
                         {byCategory.map((entry, i) => (
                           <Cell key={i} fill={entry.color} />
                         ))}
@@ -312,6 +352,7 @@ export default function DashboardPage() {
                           stroke="oklch(0.646 0.222 41.116)"
                           strokeWidth={2}
                           dot={{ r: 4 }}
+                          activeDot={{ r: 6, className: "cursor-pointer", onClick: (_, payload) => handleDotClick(payload.payload) }}
                         />
                       </LineChart>
                     </ResponsiveContainer>
@@ -341,7 +382,7 @@ export default function DashboardPage() {
                     </TableHeader>
                     <TableBody>
                       {topCategories.map((c, i) => (
-                        <TableRow key={i}>
+                        <TableRow key={i} className="cursor-pointer" onClick={() => handleCategoryRowClick(c)}>
                           <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                           <TableCell>
                             <span className="flex items-center gap-2">
@@ -378,7 +419,7 @@ export default function DashboardPage() {
                     </TableHeader>
                     <TableBody>
                       {topMerchants.map((m, i) => (
-                        <TableRow key={i}>
+                        <TableRow key={i} className="cursor-pointer" onClick={() => handleMerchantRowClick(m)}>
                           <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                           <TableCell className="truncate max-w-48">{m.merchant}</TableCell>
                           <TableCell className="text-right">{fmt(m.total)}</TableCell>
@@ -393,6 +434,14 @@ export default function DashboardPage() {
           </div>
         </>
       )}
+
+      <TransactionPanel
+        open={!!drilldown}
+        onClose={() => setDrilldown(null)}
+        title={drilldown?.title}
+        filters={drilldown?.filters}
+        color={drilldown?.color}
+      />
     </div>
   )
 }
