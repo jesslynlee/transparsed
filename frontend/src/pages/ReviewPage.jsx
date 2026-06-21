@@ -282,7 +282,7 @@ export default function ReviewPage() {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Review & Edit</h2>
         <p className="text-muted-foreground">
-          Review parsed transactions, make corrections, and save to your database.
+          Review, tweak, commit — your transactions, your rules.
         </p>
       </div>
 

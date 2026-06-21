@@ -119,7 +119,7 @@ export default function UploadPage() {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Upload Statements</h2>
         <p className="text-muted-foreground">
-          Upload your bank or credit card PDF statements to parse transactions.
+          Drop the statement, we'll parse the payment.
         </p>
       </div>
 

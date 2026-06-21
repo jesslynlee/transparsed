@@ -19,7 +19,7 @@ export default function App() {
       <div className="min-h-screen bg-background">
         <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
           <div className="max-w-6xl mx-auto px-6 flex h-14 items-center gap-8">
-            <h1 className="text-lg font-semibold tracking-tight">Expense Tracker</h1>
+            <h1 className="text-lg font-semibold tracking-tight">TransParsed</h1>
             <nav className="flex items-center gap-1">
               {navItems.map(({ to, label, icon: Icon }) => (
                 <NavLink
