@@ -1,0 +1,19 @@
+services:
+  backend:
+    build: ./backend
+    environment:
+      - DATABASE_PATH=/app/data/expense_tracker.db
+    volumes:
+      - backend-data:/app/data
+    ports:
+      - "5001:5001"
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  backend-data:

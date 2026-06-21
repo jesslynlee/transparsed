@@ -49,4 +49,4 @@ def create_app():
 if __name__ == "__main__":
     app = create_app()
     print("\n  Expense Tracker API running on http://localhost:5001\n")
-    app.run(debug=True, port=5001)
+    app.run(host="0.0.0.0", port=5001)
