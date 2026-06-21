@@ -165,6 +165,15 @@ export default function ReviewPage() {
     })
   }
 
+  const saveEditsBeforeCommit = async () => {
+    if (Object.keys(editedRows).length === 0) return
+    const promises = Object.entries(editedRows).map(([id, fields]) =>
+      updateTransaction(Number(id), fields)
+    )
+    await Promise.all(promises)
+    setEditedRows({})
+  }
+
   const handleCommitAll = () => {
     setConfirmDialog({
       title: "Commit all transactions",
@@ -174,6 +183,7 @@ export default function ReviewPage() {
         setConfirmDialog(null)
         setActionLoading("commitAll")
         try {
+          await saveEditsBeforeCommit()
           const ids = transactions.map(t => t.id)
           await commitTransactions(ids)
           toast.success(`${ids.length} transactions committed`)
@@ -190,6 +200,21 @@ export default function ReviewPage() {
   const handleCommitSelected = async () => {
     setActionLoading("commitSelected")
     try {
+      const selectedEdits = Object.fromEntries(
+        Object.entries(editedRows).filter(([id]) => selected.has(Number(id)))
+      )
+      if (Object.keys(selectedEdits).length > 0) {
+        await Promise.all(
+          Object.entries(selectedEdits).map(([id, fields]) =>
+            updateTransaction(Number(id), fields)
+          )
+        )
+        setEditedRows(prev => {
+          const rest = { ...prev }
+          for (const id of Object.keys(selectedEdits)) delete rest[id]
+          return rest
+        })
+      }
       const count = selected.size
       await commitTransactions([...selected])
       toast.success(`${count} transaction${count !== 1 ? "s" : ""} committed`)
