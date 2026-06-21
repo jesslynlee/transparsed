@@ -11,7 +11,7 @@ from flask_cors import CORS
 
 from config import Config
 from database.connection import close_db, init_db
-from models.category import seed_categories
+from models.category import seed_categories, seed_keywords
 from routes.accounts import accounts_bp
 from routes.categories import categories_bp
 from routes.dashboard import dashboard_bp
@@ -31,6 +31,7 @@ def create_app():
     with app.app_context():
         init_db()
         seed_categories()
+        seed_keywords()
 
     app.register_blueprint(accounts_bp, url_prefix="/api")
     app.register_blueprint(categories_bp, url_prefix="/api")

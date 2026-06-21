@@ -40,6 +40,13 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_transactions_dedup
     ON transactions(account_id, date, description, amount)
     WHERE is_pending = 0;
 
+CREATE TABLE IF NOT EXISTS category_keywords (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+    keyword     TEXT NOT NULL,
+    UNIQUE(category_id, keyword)
+);
+
 CREATE TABLE IF NOT EXISTS uploaded_statements (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
     filename         TEXT NOT NULL,

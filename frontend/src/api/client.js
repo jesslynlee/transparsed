@@ -9,6 +9,15 @@ export async function getCategories() {
   return data
 }
 
+export async function createCategory(name, color) {
+  const { data } = await api.post("/categories", { name, color })
+  return data
+}
+
+export async function deleteCategory(categoryId) {
+  await api.delete(`/categories/${categoryId}`)
+}
+
 export async function getAccounts() {
   const { data } = await api.get("/accounts")
   return data
@@ -73,6 +82,15 @@ export async function getCategoryKeywords() {
 export async function addCategoryKeyword(category, keyword) {
   const { data } = await api.post("/category-keywords", { category, keyword })
   return data
+}
+
+export async function getKeywordsWithIds() {
+  const { data } = await api.get("/category-keywords/all")
+  return data
+}
+
+export async function deleteCategoryKeyword(keywordId) {
+  await api.delete(`/category-keywords/${keywordId}`)
 }
 
 export async function getDashboardSummary(filters = {}) {

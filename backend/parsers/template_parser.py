@@ -1,20 +1,17 @@
 import json
 import re
-from pathlib import Path
 
 import pdfplumber
 
 from parsers.base import BaseParser, ParsedTransaction, ParseResult
 
 
-GLOBAL_CATEGORY_KEYWORDS_PATH = Path(__file__).parent / "category_keywords.json"
-
-
 def _load_global_category_keywords():
-    if GLOBAL_CATEGORY_KEYWORDS_PATH.exists():
-        with open(GLOBAL_CATEGORY_KEYWORDS_PATH) as f:
-            return json.load(f)
-    return {}
+    from models.category import get_all_keywords
+    try:
+        return get_all_keywords()
+    except Exception:
+        return {}
 
 
 class TemplateParser(BaseParser):

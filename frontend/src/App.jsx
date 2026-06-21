@@ -1,14 +1,16 @@
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from "react-router-dom"
-import { Upload, FileEdit, LayoutDashboard } from "lucide-react"
+import { Upload, FileEdit, LayoutDashboard, Settings } from "lucide-react"
 import { Toaster } from "sonner"
 import UploadPage from "@/pages/UploadPage"
 import ReviewPage from "@/pages/ReviewPage"
 import DashboardPage from "@/pages/DashboardPage"
+import SettingsPage from "@/pages/SettingsPage"
 
 const navItems = [
   { to: "/upload", label: "Upload", icon: Upload },
   { to: "/review", label: "Review & Edit", icon: FileEdit },
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/settings", label: "Settings", icon: Settings },
 ]
 
 export default function App() {
@@ -45,6 +47,7 @@ export default function App() {
             <Route path="/upload" element={<UploadPage />} />
             <Route path="/review" element={<ReviewPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </main>
       </div>

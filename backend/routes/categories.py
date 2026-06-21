@@ -1,13 +1,8 @@
-import json
-from pathlib import Path
-
 from flask import Blueprint, jsonify, request
 
 from models import category
 
 categories_bp = Blueprint("categories", __name__)
-
-CATEGORY_KEYWORDS_PATH = Path(__file__).parent.parent / "parsers" / "category_keywords.json"
 
 
 @categories_bp.route("/categories", methods=["GET"])
@@ -41,10 +36,12 @@ def delete_category(category_id):
 
 @categories_bp.route("/category-keywords", methods=["GET"])
 def list_category_keywords():
-    if not CATEGORY_KEYWORDS_PATH.exists():
-        return jsonify({})
-    with open(CATEGORY_KEYWORDS_PATH) as f:
-        return jsonify(json.load(f))
+    return jsonify(category.get_all_keywords())
+
+
+@categories_bp.route("/category-keywords/all", methods=["GET"])
+def list_keywords_with_ids():
+    return jsonify(category.get_keywords_with_ids())
 
 
 @categories_bp.route("/category-keywords", methods=["POST"])
@@ -56,20 +53,16 @@ def add_category_keyword():
     cat_name = data["category"]
     keyword = data["keyword"].strip().upper()
 
-    if CATEGORY_KEYWORDS_PATH.exists():
-        with open(CATEGORY_KEYWORDS_PATH) as f:
-            keywords = json.load(f)
-    else:
-        keywords = {}
+    cats = category.get_all()
+    cat = next((c for c in cats if c["name"] == cat_name), None)
+    if not cat:
+        return jsonify({"error": f"Category '{cat_name}' not found"}), 404
 
-    if cat_name not in keywords:
-        keywords[cat_name] = []
+    result = category.add_keyword(cat["id"], keyword)
+    return jsonify(result)
 
-    if keyword.upper() not in [k.upper() for k in keywords[cat_name]]:
-        keywords[cat_name].append(keyword)
 
-    with open(CATEGORY_KEYWORDS_PATH, "w") as f:
-        json.dump(keywords, f, indent=2)
-        f.write("\n")
-
-    return jsonify({"category": cat_name, "keywords": keywords[cat_name]})
+@categories_bp.route("/category-keywords/<int:keyword_id>", methods=["DELETE"])
+def remove_category_keyword(keyword_id):
+    category.delete_keyword(keyword_id)
+    return "", 204
