@@ -4,6 +4,11 @@ import os
 
 sys.path.insert(0, os.path.dirname(__file__))
 
+logging.basicConfig(
+    level=logging.INFO,
+    stream=sys.stdout,
+    format="[%(asctime)s] %(levelname)s in %(module)s: %(message)s",
+)
 logging.getLogger("pdfminer").setLevel(logging.ERROR)
 
 from flask import Flask
@@ -22,6 +27,7 @@ from routes.upload import upload_bp
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+    app.logger.setLevel(logging.INFO)
     CORS(app)
 
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)

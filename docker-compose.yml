@@ -3,6 +3,11 @@ services:
     build: ./backend
     environment:
       - DATABASE_PATH=/app/data/expense_tracker.db
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OLLAMA_MODEL=qwen3.5:9b
+      - OLLAMA_NUM_CTX=8192
+      - OLLAMA_NUM_PREDICT=4096
+      - OLLAMA_TIMEOUT_SECONDS=600
     volumes:
       - backend-data:/app/data
     ports:

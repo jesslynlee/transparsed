@@ -16,6 +16,7 @@ class ParsedTransaction:
 class ParseResult:
     transactions: list[ParsedTransaction] = field(default_factory=list)
     account_hint: Optional[str] = None
+    account_id: Optional[int] = None
     statement_period: Optional[str] = None
     warnings: list[str] = field(default_factory=list)
 

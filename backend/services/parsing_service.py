@@ -4,14 +4,14 @@ from flask import current_app
 
 from models import account as account_model
 from models import transaction as transaction_model
-from parsers.detector import BankDetector, UnknownBankError
+from parsers.llm_statement_parser import LlmStatementParser
 
 
 def process_upload(file_storage):
     upload_folder = current_app.config["UPLOAD_FOLDER"]
-    templates_dir = current_app.config["TEMPLATES_DIR"]
     filename = file_storage.filename
 
+    current_app.logger.info("Parsing upload started: %s", filename)
     save_path = os.path.join(upload_folder, filename)
     file_storage.save(save_path)
 
@@ -20,19 +20,29 @@ def process_upload(file_storage):
         os.remove(save_path)
         raise DuplicateFileError(f"This statement has already been uploaded: {filename}")
 
-    detector = BankDetector(templates_dir)
-    try:
-        template_id, parser = detector.detect(save_path)
-    except UnknownBankError:
+    account_candidates = account_model.get_all()
+    if not account_candidates:
         os.remove(save_path)
-        raise UnknownBankForUpload(
-            f"Could not identify the bank for: {filename}. "
-            "Check that a matching template exists."
-        )
+        raise AccountMatchError("No accounts are configured for LLM statement matching.")
 
+    parser = LlmStatementParser(account_candidates)
+    if not parser.can_parse(save_path):
+        os.remove(save_path)
+        raise ValueError("The PDF could not be rendered into images for LLM parsing.")
     result = parser.parse(save_path)
 
-    acct = _ensure_account(template_id, parser.config)
+    account_ids = {account["id"] for account in account_candidates}
+    if result.account_id not in account_ids:
+        raise AccountMatchError("Could not match this statement to a configured account.")
+
+    acct = account_model.get_by_id(result.account_id)
+    current_app.logger.info(
+        "Statement matched: filename=%s account_id=%s account_name=%s statement_period=%s",
+        filename,
+        acct["id"],
+        acct["name"],
+        result.statement_period,
+    )
 
     inserted = transaction_model.insert_pending_batch(
         result.transactions,
@@ -47,6 +57,12 @@ def process_upload(file_storage):
         statement_period=result.statement_period,
         file_hash=file_hash,
     )
+    current_app.logger.info(
+        "Parsing upload completed: filename=%s transactions=%s warnings=%s",
+        filename,
+        inserted,
+        len(result.warnings),
+    )
 
     return {
         "transaction_count": inserted,
@@ -56,22 +72,9 @@ def process_upload(file_storage):
     }
 
 
-def _ensure_account(template_id, config):
-    accounts = account_model.get_all()
-    for acct in accounts:
-        if acct["template_id"] == template_id:
-            return acct
-    return account_model.create(
-        name=config.get("account_name", template_id),
-        account_type=config.get("account_type", "credit_card"),
-        institution=config.get("institution", "Unknown"),
-        template_id=template_id,
-    )
-
-
 class DuplicateFileError(Exception):
     pass
 
 
-class UnknownBankForUpload(Exception):
+class AccountMatchError(Exception):
     pass

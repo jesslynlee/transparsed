@@ -3,8 +3,8 @@ from flask import Blueprint, request, jsonify
 from models.transaction import get_uploads, delete_upload
 from services.parsing_service import (
     process_upload,
+    AccountMatchError,
     DuplicateFileError,
-    UnknownBankForUpload,
 )
 
 upload_bp = Blueprint("upload", __name__)
@@ -39,7 +39,7 @@ def upload_statement():
         result = process_upload(file)
     except DuplicateFileError as e:
         return jsonify({"error": str(e)}), 409
-    except UnknownBankForUpload as e:
+    except AccountMatchError as e:
         return jsonify({"error": str(e)}), 422
     except Exception as e:
         return jsonify({"error": f"Failed to parse statement: {str(e)}"}), 500
