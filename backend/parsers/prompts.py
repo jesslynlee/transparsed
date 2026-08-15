@@ -35,9 +35,11 @@ Rules:
   transactions in the statement period.
 - Do not extract "Payment for Previous Statement", "Payment Received" or any equivalent
   prior-period payment line.
-- Positive amounts are spending, debits, charges, and withdrawals.
-- Negative amounts are credits, refunds, payments, reversals, and deposits.
-- Parenthesized amounts (e.g. "(12.34)" or "(SGD 12.34)") are credits.
+- Positive amounts are debits and negative amounts are credits.
+- `amount` sign is determined ONLY by how the amount is formatted on the page:
+  1. Plain number with no suffix → POSITIVE (e.g. "88.70" → 88.70)
+  2. Number followed by "CR"     → NEGATIVE (e.g. "140.57CR" → -140.57)
+  3. Parenthesized number        → NEGATIVE (e.g. "(12.34)" → -12.34)
 - Do not invent transactions that aren't visible on the page.
 - If this page has no transactions, return {"transactions": []}.
 """
