@@ -28,6 +28,10 @@ export async function createAccount(account) {
   return data
 }
 
+export async function deleteAccount(accountId) {
+  await api.delete(`/accounts/${accountId}`)
+}
+
 export async function getUploads() {
   const { data } = await api.get("/uploads")
   return data
