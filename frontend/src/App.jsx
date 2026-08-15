@@ -1,6 +1,8 @@
+import { useCallback, useMemo, useRef, useState } from "react"
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from "react-router-dom"
 import { Upload, FileEdit, LayoutDashboard, Settings } from "lucide-react"
-import { Toaster } from "sonner"
+import { Toaster, toast } from "sonner"
+import { uploadStatement } from "@/api/client"
 import UploadPage from "@/pages/UploadPage"
 import ReviewPage from "@/pages/ReviewPage"
 import DashboardPage from "@/pages/DashboardPage"
@@ -13,7 +15,65 @@ const navItems = [
   { to: "/settings", label: "Settings", icon: Settings },
 ]
 
+function useUploadQueue() {
+  const [files, setFiles] = useState([])
+  const [completedUploadsVersion, setCompletedUploadsVersion] = useState(0)
+  const nextId = useRef(0)
+
+  const handleFiles = useCallback(async (newFiles) => {
+    const pdfFiles = Array.from(newFiles).filter(f => f.name.toLowerCase().endsWith(".pdf"))
+    if (pdfFiles.length === 0) return
+
+    const entries = pdfFiles.map(f => ({
+      id: nextId.current++,
+      file: f,
+      name: f.name,
+      status: "pending",
+      message: null,
+      transactionCount: null,
+    }))
+
+    setFiles(prev => [...prev, ...entries])
+
+    for (const entry of entries) {
+      setFiles(prev => prev.map(f =>
+        f.id === entry.id ? { ...f, status: "uploading" } : f
+      ))
+
+      try {
+        const result = await uploadStatement(entry.file)
+        setFiles(prev => prev.map(f =>
+          f.id === entry.id
+            ? { ...f, status: "success", message: result.message, transactionCount: result.transaction_count }
+            : f
+        ))
+        toast.success(`${result.transaction_count} transactions parsed from ${entry.name}`)
+        setCompletedUploadsVersion(version => version + 1)
+      } catch (err) {
+        const message = err.response?.data?.error || "Upload failed"
+        setFiles(prev => prev.map(f =>
+          f.id === entry.id ? { ...f, status: "error", message } : f
+        ))
+        toast.error(`${entry.name}: ${message}`)
+      }
+    }
+  }, [])
+
+  const clearFinished = useCallback(() => {
+    setFiles(prev => prev.filter(f => f.status !== "success" && f.status !== "error"))
+  }, [])
+
+  return useMemo(() => ({
+    files,
+    handleFiles,
+    clearFinished,
+    completedUploadsVersion,
+  }), [files, handleFiles, clearFinished, completedUploadsVersion])
+}
+
 export default function App() {
+  const uploadQueue = useUploadQueue()
+
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-background">
@@ -44,7 +104,7 @@ export default function App() {
         <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           <Routes>
             <Route path="/" element={<Navigate to="/upload" replace />} />
-            <Route path="/upload" element={<UploadPage />} />
+            <Route path="/upload" element={<UploadPage uploadQueue={uploadQueue} />} />
             <Route path="/review" element={<ReviewPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/settings" element={<SettingsPage />} />

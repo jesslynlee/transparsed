@@ -8,19 +8,17 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { uploadStatement, getUploads, deleteUpload } from "@/api/client"
+import { getUploads, deleteUpload } from "@/api/client"
 import { AlertDialog } from "@/components/ui/alert-dialog"
 
-export default function UploadPage() {
-  const [files, setFiles] = useState([])
+export default function UploadPage({ uploadQueue }) {
   const [isDragging, setIsDragging] = useState(false)
   const [pastUploads, setPastUploads] = useState([])
   const [uploadsLoading, setUploadsLoading] = useState(true)
   const [confirmDialog, setConfirmDialog] = useState(null)
   const inputRef = useRef(null)
   const navigate = useNavigate()
-
-  const nextId = useRef(0)
+  const { files, handleFiles, clearFinished, completedUploadsVersion } = uploadQueue
 
   const fetchUploads = useCallback(async () => {
     try {
@@ -31,46 +29,7 @@ export default function UploadPage() {
     }
   }, [])
 
-  useEffect(() => { fetchUploads() }, [fetchUploads])
-
-  const handleFiles = useCallback(async (newFiles) => {
-    const pdfFiles = Array.from(newFiles).filter(f => f.name.toLowerCase().endsWith(".pdf"))
-    if (pdfFiles.length === 0) return
-
-    const entries = pdfFiles.map(f => ({
-      id: nextId.current++,
-      file: f,
-      name: f.name,
-      status: "pending",
-      message: null,
-      transactionCount: null,
-    }))
-
-    setFiles(prev => [...prev, ...entries])
-
-    for (const entry of entries) {
-      setFiles(prev => prev.map(f =>
-        f.id === entry.id ? { ...f, status: "uploading" } : f
-      ))
-
-      try {
-        const result = await uploadStatement(entry.file)
-        setFiles(prev => prev.map(f =>
-          f.id === entry.id
-            ? { ...f, status: "success", message: result.message, transactionCount: result.transaction_count }
-            : f
-        ))
-        toast.success(`${result.transaction_count} transactions parsed from ${entry.name}`)
-        fetchUploads()
-      } catch (err) {
-        const message = err.response?.data?.error || "Upload failed"
-        setFiles(prev => prev.map(f =>
-          f.id === entry.id ? { ...f, status: "error", message } : f
-        ))
-        toast.error(`${entry.name}: ${message}`)
-      }
-    }
-  }, [fetchUploads])
+  useEffect(() => { fetchUploads() }, [fetchUploads, completedUploadsVersion])
 
   const onDrop = useCallback((e) => {
     e.preventDefault()
@@ -90,10 +49,6 @@ export default function UploadPage() {
 
   const hasSuccess = files.some(f => f.status === "success")
   const hasFinished = files.some(f => f.status === "success" || f.status === "error")
-
-  const clearFinished = () => {
-    setFiles(prev => prev.filter(f => f.status !== "success" && f.status !== "error"))
-  }
 
   const handleDeleteUpload = (upload) => {
     setConfirmDialog({
@@ -166,8 +121,8 @@ export default function UploadPage() {
             )}
           </CardHeader>
           <CardContent className="space-y-3">
-            {files.map((f, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-lg border">
+            {files.map((f) => (
+              <div key={f.id} className="flex items-center justify-between p-3 rounded-lg border">
                 <div className="flex items-center gap-3">
                   <FileText className="h-5 w-5 text-muted-foreground" />
                   <span className="text-sm font-medium">{f.name}</span>
