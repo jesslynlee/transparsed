@@ -214,9 +214,12 @@ export default function UploadPage({ uploadQueue }) {
                           : "—"}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {new Date(u.uploaded_at + "Z").toLocaleDateString("en-US", {
-                          month: "short", day: "numeric", year: "numeric",
-                          hour: "2-digit", minute: "2-digit",
+                        {new Date(u.uploaded_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
                         })}
                       </TableCell>
                       <TableCell>
