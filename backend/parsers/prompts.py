@@ -119,25 +119,6 @@ def build_metadata_prompt(account_candidates: list[dict]) -> str:
     
     Return only the JSON object with no markdown or additional text.
     """
-    """
-    You are identifying which configured account this bank statement belongs to
-    and extracting its statement period.
-    Choose the single best matching account from this fixed list:
-            {json.dumps(allowed_accounts, ensure_ascii=False)}
-            
-            Return exactly one valid JSON object and nothing else:
-            {{"account_id": 1, "statement_period": "YYYY-MM"}}
-            
-            Rules:
-            - `account_id` must be exactly one ID from the supplied list.
-            - Match using the visible institution name, account or card name, product name, and
-              masked account digits. Do not infer an account from transaction merchants.
-            - If no account can be matched confidently, return null for `account_id`.
-            - `statement_period` is the month containing the statement date or statement-period
-              end date, in YYYY-MM format.
-            - Do not use the payment due date as the statement period.
-            - If no statement date or period end date is visible, return null for `statement_period`.
-            """
 
 
 def build_metadata_schema(account_candidates: list[dict]) -> dict:
