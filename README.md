@@ -1,23 +1,25 @@
-# Transparsed
+# TransParsed
 
-Turn your bank statement PDFs into spending insights.
+Built out of personal necessity after one too many questionable spending decisions.
+This is my attempt to fix that because if I can't stop spending, I can at least pretend it's for the data. 
+Runs on a local LLM, so my bad financial decisions stay private.
 
-## Features
-
-- **PDF Statement Parsing** — Upload credit card/bank statements and automatically extract transactions using template-based parsing
+## What it Does
+- **PDF Statement Parsing** — Upload credit card/bank statements and automatically extract transactions using a vision-language model
 - **Auto-Categorization** — Transactions are matched to categories (Dining, Groceries, Transportation, etc.) using configurable keyword rules
 - **Review & Edit** — Review parsed transactions before committing. Edit categories, descriptions, and amounts. Manual transactions are also supported
 - **Dashboard** — Interactive charts showing spending by category, monthly trends, and top merchants. Click any chart element to drill down into individual transactions
-- **Settings** — Manage categories and keyword rules. 
+- **Settings** — Manage account, categories and keyword rules. 
 
 ## Tech Stack
 
-| Layer | Tech |
-|---|---|
-| Frontend | React 19, Tailwind CSS 4, Recharts, Vite |
-| Backend | Flask, SQLite |
-| PDF Parsing | pdfplumber |
-| Containerization | Docker, docker-compose |
+| Layer         | Tech |
+|---------------|---|
+| Frontend      | React 19, Tailwind CSS 4, Recharts, Vite |
+| Backend       | Flask, PostgreSQL |
+| PDF Processing | PyMuPDF |
+| LLM | Ollama |
+| Containerization | Docker |
 
 ## Getting Started
 
@@ -25,6 +27,7 @@ Turn your bank statement PDFs into spending insights.
 
 - Python 3.12+
 - Node.js 22+
+- Ollama
 
 ### Backend
 
@@ -61,31 +64,26 @@ Frontend on http://localhost:3000, API on http://localhost:5001.
 ```
 transparsed/
 ├── backend/
-│   ├── app.py                  # Flask app entry point
-│   ├── config.py               # App configuration
+│   ├── app.py                       # Flask app entry point
+│   ├── config.py                    # App configuration
 │   ├── database/
-│   │   ├── connection.py       # SQLite connection management
-│   │   └── schema.sql          # Table definitions
-│   ├── models/                 # Data access layer
+│   │   ├── connection.py            # PostgreSQL connection management
+│   │   └── schema.sql               # Table definitions
+│   ├── models/                      # Data access layer
 │   ├── parsers/
-│   │   ├── templates/          # Bank-specific parsing configs (JSON)
-│   │   ├── template_parser.py  # PDF extraction engine
-│   │   └── detector.py         # Auto-detect bank from PDF
-│   ├── routes/                 # API endpoints
-│   ├── services/               # Business logic
+│   │   ├── llm_client.py            
+│   │   ├── llm_statement_parser.py  
+│   │   ├── pdf_renderer.py          
+│   │   └── prompts.py               
+│   ├── routes/                      # API endpoints
+│   ├── services/                    # Business logic
 │   └── Dockerfile
 ├── frontend/
 │   ├── src/
-│   │   ├── pages/              # Upload, Review, Dashboard, Settings
-│   │   ├── components/ui/      # Reusable UI components
-│   │   └── api/client.js       # API client
-│   ├── nginx.conf              # Production reverse proxy config
+│   │   ├── pages/                   # Upload, Review, Dashboard, Settings
+│   │   ├── components/ui/           # Reusable UI components
+│   │   └── api/client.js            # API client
+│   ├── nginx.conf                   # Production reverse proxy config
 │   └── Dockerfile
 └── docker-compose.yml
 ```
-
-## Adding a New Bank Statement
-
-1. Upload a statement and note the column positions using a PDF viewer
-2. Create a new template JSON in `backend/parsers/templates/` following the existing format (see `hsbc_credit.json`)
-3. Define detection keywords, column x-coordinates, date format, and extraction patterns
