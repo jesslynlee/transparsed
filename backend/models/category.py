@@ -26,7 +26,7 @@ def seed_categories():
     db = get_db()
     for name, color in DEFAULT_CATEGORIES:
         db.execute(
-            "INSERT OR IGNORE INTO categories (name, color) VALUES (?, ?)",
+            "INSERT INTO categories (name, color) VALUES (%s, %s) ON CONFLICT DO NOTHING",
             (name, color),
         )
     db.commit()
@@ -41,32 +41,32 @@ def get_all():
 def create(name, color=None):
     db = get_db()
     db.execute(
-        "INSERT INTO categories (name, color) VALUES (?, ?)",
+        "INSERT INTO categories (name, color) VALUES (%s, %s)",
         (name, color),
     )
     db.commit()
     return db.execute(
-        "SELECT * FROM categories WHERE id = last_insert_rowid()"
+        "INSERT INTO categories (name, color) VALUES (%s, %s) RETURNING *"
     ).fetchone()
 
 
 def update(category_id, name=None, color=None):
     db = get_db()
-    cat = db.execute("SELECT * FROM categories WHERE id = ?", (category_id,)).fetchone()
+    cat = db.execute("SELECT * FROM categories WHERE id = %s", (category_id,)).fetchone()
     if not cat:
         return None
     db.execute(
-        "UPDATE categories SET name = ?, color = ? WHERE id = ?",
+        "UPDATE categories SET name = %s, color = %s WHERE id = %s",
         (name or cat["name"], color or cat["color"], category_id),
     )
     db.commit()
-    return dict(db.execute("SELECT * FROM categories WHERE id = ?", (category_id,)).fetchone())
+    return dict(db.execute("SELECT * FROM categories WHERE id = %s", (category_id,)).fetchone())
 
 
 def delete(category_id):
     db = get_db()
-    db.execute("UPDATE transactions SET category_id = NULL WHERE category_id = ?", (category_id,))
-    db.execute("DELETE FROM categories WHERE id = ?", (category_id,))
+    db.execute("UPDATE transactions SET category_id = NULL WHERE category_id = %s", (category_id,))
+    db.execute("DELETE FROM categories WHERE id = %s", (category_id,))
     db.commit()
 
 
@@ -79,7 +79,7 @@ def seed_keywords():
         return
 
     db = get_db()
-    existing = db.execute("SELECT COUNT(*) FROM category_keywords").fetchone()[0]
+    existing = db.execute("SELECT COUNT(*) FROM category_keywords").fetchone()["count"]
     if existing > 0:
         return
 
@@ -87,13 +87,13 @@ def seed_keywords():
         keywords = json.load(f)
 
     for cat_name, kw_list in keywords.items():
-        row = db.execute("SELECT id FROM categories WHERE name = ?", (cat_name,)).fetchone()
+        row = db.execute("SELECT id FROM categories WHERE name = %s", (cat_name,)).fetchone()
         if not row:
             continue
-        cat_id = row[0]
+        cat_id = row["id"]
         for kw in kw_list:
             db.execute(
-                "INSERT OR IGNORE INTO category_keywords (category_id, keyword) VALUES (?, ?)",
+                "INSERT INTO category_keywords (category_id, keyword) VALUES (%s, %s) ON CONFLICT DO NOTHING",
                 (cat_id, kw.strip().upper()),
             )
     db.commit()
@@ -128,14 +128,14 @@ def add_keyword(category_id, keyword):
     db = get_db()
     keyword = keyword.strip().upper()
     db.execute(
-        "INSERT OR IGNORE INTO category_keywords (category_id, keyword) VALUES (?, ?)",
+        "INSERT INTO category_keywords (category_id, keyword) VALUES (%s, %s) ON CONFLICT DO NOTHING",
         (category_id, keyword),
     )
     db.commit()
-    cat = db.execute("SELECT name FROM categories WHERE id = ?", (category_id,)).fetchone()
+    cat = db.execute("SELECT name FROM categories WHERE id = %s", (category_id,)).fetchone()
     cat_name = cat["name"] if cat else ""
     keywords = db.execute(
-        "SELECT keyword FROM category_keywords WHERE category_id = ? ORDER BY keyword",
+        "SELECT keyword FROM category_keywords WHERE category_id = %s ORDER BY keyword",
         (category_id,),
     ).fetchall()
     return {"category": cat_name, "keywords": [r["keyword"] for r in keywords]}
@@ -143,5 +143,5 @@ def add_keyword(category_id, keyword):
 
 def delete_keyword(keyword_id):
     db = get_db()
-    db.execute("DELETE FROM category_keywords WHERE id = ?", (keyword_id,))
+    db.execute("DELETE FROM category_keywords WHERE id = %s", (keyword_id,))
     db.commit()

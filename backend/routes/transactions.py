@@ -9,7 +9,7 @@ transactions_bp = Blueprint("transactions", __name__)
 def list_transactions():
     filters = {}
     if request.args.get("is_pending") is not None:
-        filters["is_pending"] = int(request.args["is_pending"])
+        filters["is_pending"] = request.args["is_pending"]
     if request.args.get("account_id"):
         filters["account_id"] = int(request.args["account_id"])
     if request.args.get("category_id"):
