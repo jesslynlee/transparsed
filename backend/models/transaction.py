@@ -59,7 +59,7 @@ def get_all(is_pending=None, account_id=None, category_id=None,
         query += " AND t.date <= %s"
         params.append(end_date)
     if search:
-        query += " AND t.description LIKE %s"
+        query += " AND t.description ILIKE %s"
         params.append(f"%{search}%")
 
     query += " ORDER BY t.date DESC"
