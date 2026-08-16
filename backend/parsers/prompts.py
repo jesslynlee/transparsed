@@ -19,22 +19,24 @@ Each transaction must have this shape:
 
 Rules:
 - Extract EVERY visible transaction row exactly once. Do not stop after the first row.
+- Process one complete row at a time, top to bottom. Do not jump between rows.
 - Do not extract statement balances, opening or closing balances, payment due amounts,
   credit limits, totals, fees summaries, headings, footers, page numbers, 
-  advertisements, or notices.
-- `date` must use ISO format YYYY-MM-DD. 
-- If a transaction description spans multiple lines, merge it into one entry.
-- Preserve merchant names and reference text; do not summarize or invent details.
-- `amount` must be a JSON number, never a string. Remove currency symbols and
-  thousands separators.
-- Do not extract statement balances, opening or closing balances, payment due amounts,
-  credit limits, totals, fees summaries, headings, footers, page numbers,
   advertisements, or notices.
 - Do not extract "Balance from Previous Statement", "Previous Balance", "Balance Brought
   Forward", or any equivalent opening-balance carry-over line. These are not new
   transactions in the statement period.
 - Do not extract "Payment for Previous Statement", "Payment Received" or any equivalent
   prior-period payment line.
+- `date` must use ISO format YYYY-MM-DD. 
+- If a transaction description spans multiple lines, merge it into one entry.
+- Preserve merchant names and reference text; do not summarize or invent details.
+- `amount` must be a JSON number, never a string. Remove currency symbols and
+  thousands separators.
+- The `date`, `description`, and `amount` you extract for each transaction MUST
+  come directly from that transaction's own row. Cross-check: if the date or
+  description you extracted does not appear in the raw_text for that same row,
+  you have mixed up rows — go back and re-read that row in isolation.
 - Positive amounts are debits and negative amounts are credits.
 - `amount` sign is determined ONLY by how the amount is formatted on the page:
   1. Plain number with no suffix → POSITIVE (e.g. "88.70" → 88.70)
