@@ -2,7 +2,7 @@ from database.connection import get_db
 
 
 def _build_where(filters):
-    clauses = ["t.is_pending = 0"]
+    clauses = ["t.is_pending = False"]
     params = []
     if filters.get("account_id"):
         clauses.append("t.account_id = ?")
@@ -67,7 +67,7 @@ def _get_month_over_month(db, filters):
     prev_start = f"{prev_month}-01"
     prev_end = prev_d.strftime("%Y-%m-%d")
 
-    base_clauses = ["t.is_pending = 0"]
+    base_clauses = ["t.is_pending = False"]
     base_params = []
     if filters.get("account_id"):
         base_clauses.append("t.account_id = ?")
